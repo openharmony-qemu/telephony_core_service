@@ -1,0 +1,13 @@
+--- a/base/telephony/core_service/services/etc/param/telephony.para
++++ b/base/telephony/core_service/services/etc/param/telephony.para
+@@ -18,4 +18,8 @@
+ const.telephony.satellite.supported=0
+ persist.telephony.retrystrategy.allow=true
+ persist.telephony.setupfail.delay=3000
+-persist.telephony.modemdend.delay=1000
+\ No newline at end of file
++persist.telephony.modemdend.delay=1000
++
++# QEMU reference AT transport; no modem/SIM/IMS provider is synthesized.
++const.sys.radio.vendorlib.path=libril_vendor.z.so
++const.telephony.ril.attty.path=/dev/ttyUSB0

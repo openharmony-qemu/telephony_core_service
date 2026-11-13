@@ -1,0 +1,201 @@
+diff --git a/base/telephony/core_service/frameworks/native/src/telephony_state_registry_client.cpp b/base/telephony/core_service/frameworks/native/src/telephony_state_registry_client.cpp
+index c0adb1ca02617d5b89e63b298d902be9f4163159..81ff30ddaf32cb5b88a5dc39abb28be7e6e817c7 100644
+--- a/base/telephony/core_service/frameworks/native/src/telephony_state_registry_client.cpp
++++ b/base/telephony/core_service/frameworks/native/src/telephony_state_registry_client.cpp
+@@ -205,6 +205,16 @@ int32_t TelephonyStateRegistryClient::UpdateSimActiveState(int32_t slotId, bool
+     }
+     return proxy->UpdateSimActiveState(slotId, activeStateResult);
+ }
++
++int32_t TelephonyStateRegistryClient::UpdateCommunicationState(int32_t slotId, bool is5A)
++{
++    auto proxy = GetProxy();
++    if (proxy == nullptr) {
++        TELEPHONY_LOGE("proxy is null!");
++        return TELEPHONY_ERR_IPC_CONNECT_STUB_FAIL;
++    }
++    return proxy->UpdateCommunicationState(slotId, is5A);
++}
+ } // namespace Telephony
+ }
+
+diff --git a/base/telephony/core_service/frameworks/native/src/telephony_state_registry_proxy.cpp b/base/telephony/core_service/frameworks/native/src/telephony_state_registry_proxy.cpp
+index 11b3522f0984d3da81a0643127c367688a59d43f..2381d46959ca81e765d4e281bdb136f1cf20a798 100644
+--- a/base/telephony/core_service/frameworks/native/src/telephony_state_registry_proxy.cpp
++++ b/base/telephony/core_service/frameworks/native/src/telephony_state_registry_proxy.cpp
+@@ -457,5 +457,32 @@ int32_t TelephonyStateRegistryProxy::UpdateSimActiveState(int32_t slotId, bool a
+     }
+     return TELEPHONY_ERR_IPC_CONNECT_STUB_FAIL;
+ }
++
++int32_t TelephonyStateRegistryProxy::UpdateCommunicationState(int32_t slotId, bool is5A)
++{
++    MessageOption option;
++    MessageParcel in;
++    MessageParcel out;
++    if (!in.WriteInterfaceToken(TelephonyStateRegistryProxy::GetDescriptor())) {
++        return TELEPHONY_ERR_WRITE_DESCRIPTOR_TOKEN_FAIL;
++    }
++    if (!in.WriteInt32(slotId)) {
++        return TELEPHONY_ERR_WRITE_DATA_FAIL;
++    }
++    if (!in.WriteBool(is5A)) {
++        return TELEPHONY_ERR_WRITE_DATA_FAIL;
++    }
++    sptr<IRemoteObject> remote = Remote();
++    if (remote == nullptr) {
++        return TELEPHONY_ERR_IPC_CONNECT_STUB_FAIL;
++    }
++    int result = remote->SendRequest(
++        static_cast<uint32_t>(StateNotifyInterfaceCode::COMMUNICATION_STATE), in, out, option);
++    if (result == ERR_NONE) {
++        result = out.ReadInt32();
++        return result;
++    }
++    return TELEPHONY_ERR_IPC_CONNECT_STUB_FAIL;
++}
+ } // namespace Telephony
+ } // namespace OHOS
+diff --git a/base/telephony/core_service/interfaces/innerkits/include/i_telephony_state_notify.h b/base/telephony/core_service/interfaces/innerkits/include/i_telephony_state_notify.h
+index df3aee51086611f64893ab71e3ec72851cf840be..1c7539ae69a3ff05c6297375879fd84259f3316e 100644
+--- a/base/telephony/core_service/interfaces/innerkits/include/i_telephony_state_notify.h
++++ b/base/telephony/core_service/interfaces/innerkits/include/i_telephony_state_notify.h
+@@ -149,6 +149,8 @@ public:
+      */
+     virtual int32_t UnregisterStateChange(int32_t slotId, uint32_t mask) = 0;
+
++    virtual int32_t UpdateCommunicationState(int32_t slotId, bool is5A) = 0;
++
+ public:
+     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Telephony.ITelephonyStateNotify");
+ };
+diff --git a/base/telephony/core_service/interfaces/innerkits/include/state_registry_ipc_interface_code.h b/base/telephony/core_service/interfaces/innerkits/include/state_registry_ipc_interface_code.h
+index 33ef52207ebbdac7c4b33d4825be2b898220684f..3fae8428118f6cd13c2e14e49a2b57c690da67ed 100644
+GIT binary patch
+delta 43
+xcmcb}`GIpoCX2idFP8!kIQ#qhhWdFrJBE1r`^5)`IEJ_?*eV#BOwMG<000VC3)27q
+
+delta 11
+Scmeysd69ENCd=dwmJ9$M1O#{h
+
+diff --git a/base/telephony/core_service/interfaces/innerkits/include/telephony_observer_broker.h b/base/telephony/core_service/interfaces/innerkits/include/telephony_observer_broker.h
+index 84bdb9c5cdbf3ee7867d7bd34f2742d6c1e4b7d2..2442aed02f5989545cb77c523bbd792901db16bd 100644
+--- a/base/telephony/core_service/interfaces/innerkits/include/telephony_observer_broker.h
++++ b/base/telephony/core_service/interfaces/innerkits/include/telephony_observer_broker.h
+@@ -42,6 +42,7 @@ public:
+         ON_CALL_STATE_EX_UPDATED,
+         ON_CCALL_STATE_UPDATED,
+         ON_SIM_ACTIVE_STATE_UPDATED,
++        ON_COMMUNICATION_STATE_UPDATED = 13,
+     };
+
+     virtual void OnCellularDataConnectStateUpdated(
+@@ -66,7 +67,10 @@ public:
+         int32_t slotId, int32_t callState, const std::u16string &phoneNumber) = 0;
+     virtual void OnSimActiveStateUpdated(int32_t slotId, bool enable) = 0;
+
++    virtual void OnCommunicationStateUpdated(int32_t slotId, bool is5A) {}
++
+ public:
++    static const uint32_t OBSERVER_MASK_COMMUNICATION_STATE = 0x00002000;
+     static const uint32_t OBSERVER_MASK_NETWORK_STATE = 0x00000001;
+     static const uint32_t OBSERVER_MASK_CALL_STATE_EX = 0x00000002;
+     static const uint32_t OBSERVER_MASK_CALL_STATE = 0x00000004;
+diff --git a/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_client.h b/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_client.h
+index e8c990f7b0750d788d73264e991b4442625585d2..757db1effc634136ce90f7f7890982f49ca8fbef 100644
+--- a/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_client.h
++++ b/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_client.h
+@@ -120,6 +120,7 @@ public:
+      * @param activeStateResult sim active state
+      * @return int32_t TELEPHONY_SUCCESS on success, others on failure.
+      */
++    int32_t UpdateCommunicationState(int32_t slotId, bool is5A);
+     int32_t UpdateSimActiveState(int32_t slotId, bool activeStateResult);
+     int32_t UpdateIccAccount();
+     sptr<ITelephonyStateNotify> GetProxy();
+diff --git a/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_proxy.h b/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_proxy.h
+index 93b1cf36df2878b2dc2a75ac7ca32d51da6d91b9..2383baccce0ce2a14e49421c246a4df5817092ed 100644
+--- a/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_proxy.h
++++ b/base/telephony/core_service/interfaces/innerkits/include/telephony_state_registry_proxy.h
+@@ -50,6 +50,7 @@ public:
+     int32_t UpdateCfuIndicator(int32_t slotId, bool cfuResult) override;
+     int32_t UpdateVoiceMailMsgIndicator(int32_t slotId, bool voiceMailMsgResult) override;
+     int32_t UpdateIccAccount() override;
++    int32_t UpdateCommunicationState(int32_t slotId, bool is5A) override;
+     int32_t UpdateSimActiveState(int32_t slotId, bool activeStateResult) override;
+
+     int32_t RegisterStateChange(const sptr<TelephonyObserverBroker> &telephonyObserver,
+diff --git a/base/telephony/core_service/services/tel_ril/include/tel_ril_callback.h b/base/telephony/core_service/services/tel_ril/include/tel_ril_callback.h
+index c262ce130f104db4b3eddba15e60e4ad2a3ad504..9eecdde5d05f0322f0d6a31cefd15f9cbd611500 100644
+--- a/base/telephony/core_service/services/tel_ril/include/tel_ril_callback.h
++++ b/base/telephony/core_service/services/tel_ril/include/tel_ril_callback.h
+@@ -27,6 +27,8 @@ public:
+     explicit TelRilCallback(std::shared_ptr<TelRilManager> telRilManager);
+     ~TelRilCallback() = default;
+
++    int32_t CommunicationStateUpdated(const HDI::Ril::V1_1::RilRadioResponseInfo& responseInfo, bool is5A) override;
++
+     // Call
+     int32_t CallEmergencyNotice(const HDI::Ril::V1_1::RilRadioResponseInfo &responseInfo,
+         const HDI::Ril::V1_1::EmergencyInfoList &emergencyInfoList) override;
+diff --git a/base/telephony/core_service/services/tel_ril/include/tel_ril_network.h b/base/telephony/core_service/services/tel_ril/include/tel_ril_network.h
+index 9dacbbdbb16304b26f13b9810f207e25d71f0c06..10dada5c977a2ea0d5757491c9991b25cd3aac1a 100644
+--- a/base/telephony/core_service/services/tel_ril/include/tel_ril_network.h
++++ b/base/telephony/core_service/services/tel_ril/include/tel_ril_network.h
+@@ -29,6 +29,7 @@ public:
+     ~TelRilNetwork() = default;
+
+     // send  command
++    int32_t CommunicationStateUpdated(bool is5A);
+     int32_t GetSignalStrength(const AppExecFwk::InnerEvent::Pointer &response);
+     int32_t GetCsRegStatus(const AppExecFwk::InnerEvent::Pointer &response);
+     int32_t GetPsRegStatus(const AppExecFwk::InnerEvent::Pointer &response);
+diff --git a/base/telephony/core_service/services/tel_ril/src/tel_ril_callback.cpp b/base/telephony/core_service/services/tel_ril/src/tel_ril_callback.cpp
+index 59f0cbf6bbe6b9320aa60559e37e59dfa3014f3d..9e74fa0fef2ff2ed32cbdf983d55761b3ace81e7 100644
+--- a/base/telephony/core_service/services/tel_ril/src/tel_ril_callback.cpp
++++ b/base/telephony/core_service/services/tel_ril/src/tel_ril_callback.cpp
+@@ -964,5 +964,16 @@ int32_t TelRilCallback::SetPrimarySlotResponse(const HDI::Ril::V1_1::RilRadioRes
+     return Response(responseInfo, &TelRilManager::GetTelRilSim, &TelRilSim::SetPrimarySlotResponse);
+ }
+
++int32_t TelRilCallback::CommunicationStateUpdated(
++    const HDI::Ril::V1_1::RilRadioResponseInfo& responseInfo, bool is5A)
++{
++    if (responseInfo.error != HDI::Ril::V1_1::RilErrType::NONE ||
++        (responseInfo.type != HDI::Ril::V1_1::RilResponseTypes::RIL_RESPONSE_NOTICE &&
++        responseInfo.type != HDI::Ril::V1_1::RilResponseTypes::RIL_RESPONSE_NOTICE_MUST_ACK)) {
++        return TELEPHONY_ERR_ARGUMENT_INVALID;
++    }
++    return Notify(responseInfo, &TelRilManager::GetTelRilNetwork, &TelRilNetwork::CommunicationStateUpdated, is5A);
++}
++
+ } // namespace Telephony
+ } // namespace OHOS
+diff --git a/base/telephony/core_service/services/tel_ril/src/tel_ril_network.cpp b/base/telephony/core_service/services/tel_ril/src/tel_ril_network.cpp
+index fae0325aba0edd1c320c275442917c018ec6874c..84d7d05b4ffec0125a33ffa30c1ccfcba2c2bfca 100644
+--- a/base/telephony/core_service/services/tel_ril/src/tel_ril_network.cpp
++++ b/base/telephony/core_service/services/tel_ril/src/tel_ril_network.cpp
+@@ -18,6 +18,8 @@
+ #include <securec.h>
+
+ #include "radio_event.h"
++#include "ipc_skeleton.h"
++#include "telephony_state_registry_client.h"
+
+ using namespace std;
+ using OHOS::IRemoteObject;
+@@ -1128,5 +1130,14 @@ void TelRilNetwork::BuildChannelConfigInfoList(std::shared_ptr<ChannelConfigInfo
+         channelConfigList->channelConfigInfos.push_back(phyChnlCfg);
+     }
+ }
++int32_t TelRilNetwork::CommunicationStateUpdated(bool is5A)
++{
++    struct IdentityGuard {
++        std::string saved = IPCSkeleton::ResetCallingIdentity();
++        ~IdentityGuard() { IPCSkeleton::SetCallingIdentity(saved); }
++    } guard;
++    return DelayedRefSingleton<TelephonyStateRegistryClient>::GetInstance().UpdateCommunicationState(slotId_, is5A);
++}
++
+ } // namespace Telephony
+ } // namespace OHOS
