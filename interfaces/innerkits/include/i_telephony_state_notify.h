@@ -149,6 +149,8 @@ public:
      */
     virtual int32_t UnregisterStateChange(int32_t slotId, uint32_t mask) = 0;
 
+    virtual int32_t UpdateCommunicationState(int32_t slotId, bool is5A) = 0;
+
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Telephony.ITelephonyStateNotify");
 };

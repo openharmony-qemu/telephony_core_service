@@ -42,6 +42,7 @@ public:
         ON_CALL_STATE_EX_UPDATED,
         ON_CCALL_STATE_UPDATED,
         ON_SIM_ACTIVE_STATE_UPDATED,
+        ON_COMMUNICATION_STATE_UPDATED = 13,
     };
 
     virtual void OnCellularDataConnectStateUpdated(
@@ -66,7 +67,10 @@ public:
         int32_t slotId, int32_t callState, const std::u16string &phoneNumber) = 0;
     virtual void OnSimActiveStateUpdated(int32_t slotId, bool enable) = 0;
 
+    virtual void OnCommunicationStateUpdated(int32_t slotId, bool is5A) {}
+
 public:
+    static const uint32_t OBSERVER_MASK_COMMUNICATION_STATE = 0x00002000;
     static const uint32_t OBSERVER_MASK_NETWORK_STATE = 0x00000001;
     static const uint32_t OBSERVER_MASK_CALL_STATE_EX = 0x00000002;
     static const uint32_t OBSERVER_MASK_CALL_STATE = 0x00000004;

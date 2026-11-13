@@ -964,5 +964,16 @@ int32_t TelRilCallback::SetPrimarySlotResponse(const HDI::Ril::V1_1::RilRadioRes
     return Response(responseInfo, &TelRilManager::GetTelRilSim, &TelRilSim::SetPrimarySlotResponse);
 }
 
+int32_t TelRilCallback::CommunicationStateUpdated(
+    const HDI::Ril::V1_1::RilRadioResponseInfo& responseInfo, bool is5A)
+{
+    if (responseInfo.error != HDI::Ril::V1_1::RilErrType::NONE ||
+        (responseInfo.type != HDI::Ril::V1_1::RilResponseTypes::RIL_RESPONSE_NOTICE &&
+        responseInfo.type != HDI::Ril::V1_1::RilResponseTypes::RIL_RESPONSE_NOTICE_MUST_ACK)) {
+        return TELEPHONY_ERR_ARGUMENT_INVALID;
+    }
+    return Notify(responseInfo, &TelRilManager::GetTelRilNetwork, &TelRilNetwork::CommunicationStateUpdated, is5A);
+}
+
 } // namespace Telephony
 } // namespace OHOS

@@ -27,6 +27,8 @@ public:
     explicit TelRilCallback(std::shared_ptr<TelRilManager> telRilManager);
     ~TelRilCallback() = default;
 
+    int32_t CommunicationStateUpdated(const HDI::Ril::V1_1::RilRadioResponseInfo& responseInfo, bool is5A) override;
+
     // Call
     int32_t CallEmergencyNotice(const HDI::Ril::V1_1::RilRadioResponseInfo &responseInfo,
         const HDI::Ril::V1_1::EmergencyInfoList &emergencyInfoList) override;

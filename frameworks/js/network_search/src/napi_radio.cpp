@@ -3432,6 +3432,10 @@ static napi_value InitEnumNrOptionMode(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_PROPERTY(
             "NR_OPTION_NSA_AND_SA", NapiUtil::ToInt32Value(env, static_cast<int32_t>(NR_OPTION_NSA_AND_SA))),
     };
+    napi_value mode = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &mode));
+    NAPI_CALL(env, napi_define_properties(env, mode, sizeof(desc) / sizeof(desc[0]), desc));
+    NAPI_CALL(env, napi_set_named_property(env, exports, "NrOptionMode", mode));
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
     return exports;
 }

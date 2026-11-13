@@ -120,6 +120,7 @@ public:
      * @param activeStateResult sim active state
      * @return int32_t TELEPHONY_SUCCESS on success, others on failure.
      */
+    int32_t UpdateCommunicationState(int32_t slotId, bool is5A);
     int32_t UpdateSimActiveState(int32_t slotId, bool activeStateResult);
     int32_t UpdateIccAccount();
     sptr<ITelephonyStateNotify> GetProxy();

@@ -3432,6 +3432,25 @@ napi_status InitSimInterface(napi_env env, napi_value exports)
     };
     return napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
+
+napi_value InitEnumDsdsMode(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_STATIC_PROPERTY("DSDS_MODE_V2",
+            NapiUtil::ToInt32Value(env, static_cast<int32_t>(DsdsMode::DSDS_MODE_V2))),
+        DECLARE_NAPI_STATIC_PROPERTY("DSDS_MODE_V3",
+            NapiUtil::ToInt32Value(env, static_cast<int32_t>(DsdsMode::DSDS_MODE_V3))),
+        DECLARE_NAPI_STATIC_PROPERTY("DSDS_MODE_V5_TDM",
+            NapiUtil::ToInt32Value(env, static_cast<int32_t>(DsdsMode::DSDS_MODE_V5_TDM))),
+        DECLARE_NAPI_STATIC_PROPERTY("DSDS_MODE_V5_DSDA",
+            NapiUtil::ToInt32Value(env, static_cast<int32_t>(DsdsMode::DSDS_MODE_V5_DSDA))),
+    };
+    napi_value mode = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &mode));
+    NAPI_CALL(env, napi_define_properties(env, mode, sizeof(desc) / sizeof(desc[0]), desc));
+    NAPI_CALL(env, napi_set_named_property(env, exports, "DsdsMode", mode));
+    return exports;
+}
 } // namespace
 
 EXTERN_C_START
@@ -3451,6 +3470,9 @@ napi_value InitNapiSim(napi_env env, napi_value exports)
     NAPI_CALL(env, InitEnumOperatorConfigKey(env, exports));
     NAPI_CALL(env, InitEnumOperatorSimCard(env, exports));
     NAPI_CALL(env, InitEnumAuthType(env, exports));
+    if (InitEnumDsdsMode(env, exports) == nullptr) {
+        return nullptr;
+    }
     return exports;
 }
 EXTERN_C_END

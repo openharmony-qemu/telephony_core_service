@@ -18,6 +18,8 @@
 #include <securec.h>
 
 #include "radio_event.h"
+#include "ipc_skeleton.h"
+#include "telephony_state_registry_client.h"
 
 using namespace std;
 using OHOS::IRemoteObject;
@@ -1128,5 +1130,14 @@ void TelRilNetwork::BuildChannelConfigInfoList(std::shared_ptr<ChannelConfigInfo
         channelConfigList->channelConfigInfos.push_back(phyChnlCfg);
     }
 }
+int32_t TelRilNetwork::CommunicationStateUpdated(bool is5A)
+{
+    struct IdentityGuard {
+        std::string saved = IPCSkeleton::ResetCallingIdentity();
+        ~IdentityGuard() { IPCSkeleton::SetCallingIdentity(saved); }
+    } guard;
+    return DelayedRefSingleton<TelephonyStateRegistryClient>::GetInstance().UpdateCommunicationState(slotId_, is5A);
+}
+
 } // namespace Telephony
 } // namespace OHOS

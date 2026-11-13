@@ -29,6 +29,7 @@ public:
     ~TelRilNetwork() = default;
 
     // send  command
+    int32_t CommunicationStateUpdated(bool is5A);
     int32_t GetSignalStrength(const AppExecFwk::InnerEvent::Pointer &response);
     int32_t GetCsRegStatus(const AppExecFwk::InnerEvent::Pointer &response);
     int32_t GetPsRegStatus(const AppExecFwk::InnerEvent::Pointer &response);

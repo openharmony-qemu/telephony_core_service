@@ -50,6 +50,7 @@ public:
     int32_t UpdateCfuIndicator(int32_t slotId, bool cfuResult) override;
     int32_t UpdateVoiceMailMsgIndicator(int32_t slotId, bool voiceMailMsgResult) override;
     int32_t UpdateIccAccount() override;
+    int32_t UpdateCommunicationState(int32_t slotId, bool is5A) override;
     int32_t UpdateSimActiveState(int32_t slotId, bool activeStateResult) override;
 
     int32_t RegisterStateChange(const sptr<TelephonyObserverBroker> &telephonyObserver,
